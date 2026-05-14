@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user (Passenger, Driver, or Admin) in the system.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string", "enum": ["PASSENGER", "DRIVER", "ADMIN"] },
+        "phoneNumber": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "walletBalance": { "type": "number" },
+        "vehicleTier": { "type": "string", "enum": ["PLATINUM", "GOLD", "SILVER", "BIKE"] },
+        "currentLocation": { "type": "object" },
+        "isOnline": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "totalJobs": { "type": "integer" }
+      },
+      "required": ["userId", "email", "role"]
+    },
+    "Ride": {
+      "title": "Ride",
+      "description": "Represents a ride-hailing job.",
+      "type": "object",
+      "properties": {
+        "rideId": { "type": "string" },
+        "passengerId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "status": { "type": "string", "enum": ["IDLE", "REQUESTED", "DRIVER_ACCEPTED", "DRIVER_ARRIVING", "IN_PROGRESS", "COMPLETED", "RATED", "CANCELLED_BY_PASSENGER", "CANCELLED_BY_DRIVER", "NO_DRIVER_FOUND", "PAYMENT_PENDING"] },
+        "pickup": { "type": "object" },
+        "destination": { "type": "object" },
+        "fare": { "type": "number" },
+        "tier": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Delivery": {
+      "title": "Delivery",
+      "description": "Represents a parcel delivery job.",
+      "type": "object",
+      "properties": {
+        "deliveryId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "courierId": { "type": "string" },
+        "status": { "type": "string", "enum": ["IDLE", "PARCEL_REQUESTED", "COURIER_ACCEPTED", "PICKUP_IN_PROGRESS", "IN_TRANSIT", "DELIVERED", "RATED", "CANCELLED"] },
+        "pickup": { "type": "object" },
+        "destination": { "type": "object" },
+        "parcelSize": { "type": "string", "enum": ["SMALL", "MEDIUM", "LARGE"] },
+        "fare": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/rides/{rideId}": { "schema": "Ride", "description": "Ride history and active rides" },
+    "/deliveries/{deliveryId}": { "schema": "Delivery", "description": "Delivery history and active deliveries" },
+    "/admin/config": { "schema": "object", "description": "Global config like surge multipliers" }
+  }
+}

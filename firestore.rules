@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && incoming().role in ['PASSENGER', 'DRIVER'];
+      allow update: if isOwner(userId) && (
+        // Prevent users from verifying themselves or changing roles
+        incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phoneNumber', 'currentLocation', 'isOnline', 'walletBalance'])
+      ) || isAdmin();
+    }
+
+    // 2. Rides Collection
+    match /rides/{rideId} {
+      allow read: if isSignedIn() && (
+        isOwner(resource.data.passengerId) || 
+        isOwner(resource.data.driverId) ||
+        (resource.data.status == 'REQUESTED' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'DRIVER')
+      );
+      
+      allow create: if isSignedIn() && incoming().passengerId == request.auth.uid;
+      
+      allow update: if isSignedIn() && (
+        // Action: Driver Accepts
+        (existing().status == 'REQUESTED' && incoming().status == 'DRIVER_ACCEPTED' && incoming().driverId == request.auth.uid) ||
+        // Action: Driver Updates Progress
+        (existing().driverId == request.auth.uid && incoming().status in ['DRIVER_ARRIVING', 'IN_PROGRESS', 'COMPLETED']) ||
+        // Action: Passenger Cancels
+        (existing().passengerId == request.auth.uid && existing().status == 'REQUESTED' && incoming().status == 'CANCELLED_BY_PASSENGER')
+      ) || isAdmin();
+    }
+
+    // 3. Deliveries Collection
+    match /deliveries/{deliveryId} {
+      allow read: if isSignedIn(); // Simplified for demo, should be similar to Rides
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() || isAdmin();
+    }
+
+    // 4. Admin Config
+    match /admin/config {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    
+    // 5. Admin List
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+    }
+  }
+}

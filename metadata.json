@@ -1,0 +1,6 @@
+{
+  "name": "ZimGo: Hybrid Ride & Parcel",
+  "description": "A production-grade ride-hailing and parcel delivery platform for Zimbabwe, featuring real-time matching, live GPS tracking, and Paynow integration.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}
